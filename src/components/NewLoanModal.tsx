@@ -194,11 +194,6 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
               </div>
             </div>
 
-            {modality === 'solo_interes' && (
-              <p className="text-xs text-teal-600 border-t border-teal-100 pt-2">
-                {formatCurrency(perPeriodCharge)} de interés cada {periodWord} + {formatCurrency(cap)} de capital al final
-              </p>
-            )}
             {modality === 'personalizado' && (
               <p className="text-xs text-teal-600 border-t border-teal-100 pt-2">
                 Plan flexible: ~{formatCurrency(perPeriodCharge)} de interés cada {periodWord}, capital cuando se acuerde
