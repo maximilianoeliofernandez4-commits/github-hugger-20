@@ -32,6 +32,9 @@ function roundToFive(value: number): number {
 
 export function NewLoanModal({ open, onClose, store, client, fixedClient }: Props) {
   const [clientId, setClientId] = useState(client?.id ?? '');
+  useEffect(() => {
+    if (open) setClientId(client?.id ?? '');
+  }, [open, client?.id]);
   const [capital, setCapital] = useState('');
   const [startDate, setStartDate] = useState(todayISO());
   const [interestRate, setInterestRate] = useState('');
