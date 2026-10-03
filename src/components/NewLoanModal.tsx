@@ -103,7 +103,6 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
       const list: Payment[] = [];
       for (let i = 0; i < n; i++) {
         if (!openEnded && i >= term) break;
-        const imp = imputePayment(loan, list, 0, 'auto');
         // Monto esperado de esa cuota (solo interés: solo el interés del período)
         const remainingCap = loan.capital - list.reduce((s, p) => s + p.toCapital, 0);
         const r = periodRateMonthly(loan.interestRate, loan.frequency);
@@ -117,7 +116,6 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
           toInterest = full.toInterest;
           toCapital = full.toCapital;
         }
-        void imp;
         list.push({
           id: uid(), receiptNo: '', loanId: loan.id,
           date: addPeriodsISO(startDate, i + 1, frequency),
