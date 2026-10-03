@@ -3,7 +3,7 @@ import type { Store } from '@/hooks/useStore';
 import { Card, Badge, ProgressBar, Button, EmptyState } from './ui';
 import { formatCurrency, formatDate, monthKey, todayISO } from '@/lib/format';
 import { computeSummary } from '@/lib/loan';
-import { Users, Wallet, TrendingUp, AlertCircle, ArrowRight, Search } from 'lucide-react';
+import { Users, Wallet, TrendingUp, AlertCircle, ArrowRight, Search, Landmark } from 'lucide-react';
 
 interface Props {
   store: Store;
