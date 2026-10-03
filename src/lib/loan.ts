@@ -71,7 +71,7 @@ export function generateSchedule(loan: Loan): AmortizationRow[] {
         });
         continue;
       }
-      // La última cuota absorbe el остатo para que el total siga exacto.
+      // La última cuota absorbe el resto para que el total siga exacto.
       const cap = isLast ? balance : Math.min(periodPayment - interest, balance);
       balance = Math.max(0, balance - cap);
       const payment = isLast ? cap + interest : periodPayment;
