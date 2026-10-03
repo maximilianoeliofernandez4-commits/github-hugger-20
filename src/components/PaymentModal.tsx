@@ -102,12 +102,12 @@ export function PaymentModal({ open, onClose, store, loan, client, onPaymentRegi
         {next && (
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setQuickAmount(next.amount)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-teal-400 hover:text-teal-600">
-              {loan.frequency === 'mensual' ? 'Cuota completa' : `Cuota ${periodLabel(loan)}`}: {formatCurrency(next.amount)}
+              {loan.modality === 'solo_interes' ? 'Pagó interés y capital' : loan.frequency === 'mensual' ? 'Cuota completa' : `Cuota ${periodLabel(loan)}`}: {formatCurrency(next.amount)}
             </button>
             <button type="button" onClick={() => setQuickAmount(next.interest)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-teal-400 hover:text-teal-600">
               Solo interés: {formatCurrency(next.interest)}
             </button>
-            {next.capital > 0 && (
+            {next.capital > 0 && loan.modality !== 'solo_interes' && (
               <button type="button" onClick={() => setQuickAmount(next.capital)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-teal-400 hover:text-teal-600">
                 Solo capital: {formatCurrency(next.capital)}
               </button>
