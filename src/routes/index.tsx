@@ -29,13 +29,15 @@ import { NewClientModal } from '@/components/NewClientModal';
 import { NewLoanModal } from '@/components/NewLoanModal';
 import { PaymentModal } from '@/components/PaymentModal';
 import { ReceiptModal } from '@/components/ReceiptModal';
+import { Reports } from '@/components/Reports';
+import { EditLoanModal } from '@/components/EditLoanModal';
 import { Button } from '@/components/ui';
 import type { Client, Loan, Payment } from '@/types';
-import { Wallet, Search, Plus } from 'lucide-react';
+import { Wallet, Search, Plus, BarChart3 } from 'lucide-react';
 
 function App() {
   const store = useStore();
-  const [view, setView] = useState<'dashboard' | 'client'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'client' | 'reports'>('dashboard');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -43,6 +45,7 @@ function App() {
   const [showNewLoan, setShowNewLoan] = useState(false);
   const [loanForPayment, setLoanForPayment] = useState<Loan | null>(null);
   const [lastPayment, setLastPayment] = useState<Payment | null>(null);
+  const [loanToEdit, setLoanToEdit] = useState<Loan | null>(null);
   const [loanClient, setLoanClient] = useState<Client | null>(null);
 
   const selectedClient = store.state.clients.find((c) => c.id === selectedClientId) ?? null;
@@ -84,6 +87,9 @@ function App() {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button variant={view === 'reports' ? 'primary' : 'outline'} size="sm" onClick={() => setView(view === 'reports' ? 'dashboard' : 'reports')}>
+                <BarChart3 size={16} /> <span className="hidden sm:inline">Reportes</span>
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setShowNewClient(true)}>
                 <Plus size={16} /> <span className="hidden sm:inline">Cliente</span>
               </Button>
@@ -123,6 +129,8 @@ function App() {
           />
         )}
 
+        {view === 'reports' && <Reports store={store} onClientClick={handleClientClick} />}
+
         {view === 'client' && selectedClient && (
           <ClientDetail
             store={store}
@@ -131,6 +139,7 @@ function App() {
             onNewLoan={handleNewLoanForClient}
             onRegisterPayment={handleRegisterPayment}
             onViewReceipt={(p) => setLastPayment(p)}
+            onEditLoan={(l) => setLoanToEdit(l)}
           />
         )}
       </main>
@@ -138,6 +147,7 @@ function App() {
       {/* Modals */}
       <NewClientModal open={showNewClient} onClose={() => setShowNewClient(false)} store={store} />
       <NewLoanModal open={showNewLoan} onClose={() => setShowNewLoan(false)} store={store} client={loanClient} fixedClient={!!loanClient} />
+      <EditLoanModal open={!!loanToEdit} onClose={() => setLoanToEdit(null)} store={store} loan={loanToEdit} />
       <PaymentModal
         open={!!loanForPayment}
         onClose={() => setLoanForPayment(null)}
