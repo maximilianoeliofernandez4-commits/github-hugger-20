@@ -68,9 +68,23 @@ export function ClientDetail({ store, client, onBack, onNewLoan, onRegisterPayme
                 {client.notes && <p className="mt-1 text-sm text-slate-500">{client.notes}</p>}
               </div>
             </div>
-            <Button onClick={() => onNewLoan(client)}>
-              <Plus size={18} /> Nuevo Préstamo
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => onNewLoan(client)}>
+                <Plus size={18} /> Nuevo Préstamo
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (confirm(`¿Eliminar a ${client.name}? Se borrarán también todos sus préstamos y pagos.`)) {
+                    store.deleteClient(client.id);
+                    onBack();
+                  }
+                }}
+                className="border-rose-200 text-rose-600 hover:bg-rose-50"
+              >
+                <Trash2 size={18} /> Eliminar
+              </Button>
+            </div>
           </div>
         </Card>
       </div>

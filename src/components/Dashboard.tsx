@@ -3,7 +3,7 @@ import type { Store } from '@/hooks/useStore';
 import { Card, Badge, ProgressBar, Button, EmptyState } from './ui';
 import { formatCurrency, formatDate, monthKey, todayISO } from '@/lib/format';
 import { computeSummary } from '@/lib/loan';
-import { Users, Wallet, TrendingUp, AlertCircle, ArrowRight, Search, Landmark } from 'lucide-react';
+import { Users, Wallet, TrendingUp, AlertCircle, ArrowRight, Search, Landmark, Trash2 } from 'lucide-react';
 
 interface Props {
   store: Store;
@@ -234,6 +234,18 @@ export function Dashboard({ store, search, onClientClick, onNewClient, onNewLoan
                         ) : (
                           <Badge variant="success">Al día</Badge>
                         )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`¿Eliminar a ${client.name}? Se borrarán también todos sus préstamos y pagos.`)) {
+                              store.deleteClient(client.id);
+                            }
+                          }}
+                          className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500"
+                          title="Eliminar cliente"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                         <ArrowRight size={18} className="text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-teal-500" />
                       </div>
                     </div>
