@@ -58,7 +58,7 @@ export function Badge({ children, variant = 'neutral', className }: BadgeProps) 
 }
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+  label?: string | undefined;
   hint?: string | undefined;
 }
 
@@ -75,6 +75,29 @@ export function Input({ label, hint, className, ...props }: InputProps) {
       />
       {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
     </label>
+  );
+}
+
+interface MoneyInputProps {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  autoFocus?: boolean;
+}
+
+export function MoneyInput({ label, value, onChange, placeholder, autoFocus }: MoneyInputProps) {
+  const digits = value.replace(/\D/g, '');
+  const display = digits ? Number(digits).toLocaleString('es-AR') : '';
+  return (
+    <Input
+      label={label}
+      inputMode="numeric"
+      value={display}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))}
+      placeholder={placeholder}
+      autoFocus={autoFocus}
+    />
   );
 }
 

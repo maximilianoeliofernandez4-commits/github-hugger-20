@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Modal, Input, Select, Textarea, Button, Badge } from './ui';
+import { Modal, Input, MoneyInput, Select, Textarea, Button, Badge } from './ui';
 import type { Store } from '@/hooks/useStore';
 import type { Loan, PaymentMethod, PaymentImputation, Client, Payment } from '@/types';
 import { formatCurrency, formatDate, todayISO } from '@/lib/format';
@@ -97,7 +97,7 @@ export function PaymentModal({ open, onClose, store, loan, client, onPaymentRegi
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Monto del pago (ARS) *" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" autoFocus />
+        <MoneyInput label="Monto del pago (ARS) *" value={amount} onChange={setAmount} placeholder="0" autoFocus />
 
         {next && (
           <div className="flex flex-wrap gap-2">

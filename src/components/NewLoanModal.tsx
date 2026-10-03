@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Input, Select, Textarea, Button } from './ui';
+import { Modal, Input, MoneyInput, Select, Textarea, Button } from './ui';
 import type { Store } from '@/hooks/useStore';
 import type { Client, Loan, LoanModality, PaymentMethod, PaymentFrequency } from '@/types';
 import { todayISO, formatCurrency } from '@/lib/format';
@@ -121,7 +121,7 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <Input label="Capital inicial (ARS) *" type="number" value={capital} onChange={(e) => setCapital(e.target.value)} placeholder="1000000" />
+          <MoneyInput label="Capital inicial (ARS) *" value={capital} onChange={setCapital} placeholder="1.000.000" />
           <Input label="Tasa de interés mensual (%) *" type="number" step="0.1" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} placeholder="5" hint="Siempre mensual — la app calcula el proporcional" />
         </div>
 
