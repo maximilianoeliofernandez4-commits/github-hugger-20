@@ -293,3 +293,44 @@ export function freqBadgeText(frequency: PaymentFrequency): string {
   if (frequency === 'semanal') return 'Semanal';
   return 'Mensual';
 }
+
+export interface OverdueInfo {
+  missed: number;
+  amountDue: number;
+  daysLate: number;
+  firstDueDate: string | null;
+}
+
+/** Cuántos períodos vencidos no se pagaron hasta hoy. */
+export function overdueInfo(loan: Loan, payments: Payment[], today: string): OverdueInfo {
+  const none: OverdueInfo = { missed: 0, amountDue: 0, daysLate: 0, firstDueDate: null };
+  const s = computeSummary(loan, payments);
+  if (s.isSettled || loan.status !== 'activa') return none;
+  const openEnded = loan.modality === 'solo_interes';
+  const maxPeriods = openEnded ? 100000 : loan.termLength;
+  let elapsed = 0;
+  while (elapsed < maxPeriods && addPeriodsISO(loan.startDate, elapsed + 1, loan.frequency) <= today) elapsed++;
+  const missed = Math.max(0, elapsed - s.paymentCount);
+  if (missed === 0) return none;
+  let amountDue = 0;
+  if (openEnded) {
+    amountDue = missed * s.remainingCapital * periodRateMonthly(loan.interestRate, loan.frequency);
+  } else {
+    const sched = generateSchedule(loan);
+    for (let i = s.paymentCount; i < elapsed; i++) amountDue += sched[i]?.payment ?? 0;
+  }
+  const firstDueDate = addPeriodsISO(loan.startDate, s.paymentCount + 1, loan.frequency);
+  const daysLate = Math.max(0, Math.round((new Date(today).getTime() - new Date(firstDueDate).getTime()) / 86400000));
+  return { missed, amountDue, daysLate, firstDueDate };
+}
+
+/** Recalcula saldos restantes de los pagos de un préstamo, en orden de fecha. */
+export function withRunningBalances(loan: Loan, loanPayments: Payment[]): Payment[] {
+  let cap = loan.capital;
+  return [...loanPayments]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((p) => {
+      cap = Math.max(0, cap - p.toCapital);
+      return { ...p, remainingCapital: cap };
+    });
+}
