@@ -31,12 +31,21 @@ export function effectiveMonths(loan: Loan): number {
   return loan.termLength / periodsPerMonth(loan.frequency);
 }
 
+export function roundUpPayment(amount: number): number {
+  if (amount <= 0) return 0;
+  // Redondea hacia arriba a un valor "redondo": miles para cuotas grandes,
+  // quinientos/miles según el tamaño de la cuota.
+  const step = amount >= 20000 ? 1000 : amount >= 5000 ? 500 : 100;
+  return Math.ceil(amount / step) * step;
+}
+
 export function fixedPeriodPayment(capital: number, ratePctMonthly: number, termLength: number, frequency: PaymentFrequency): number {
   // Interés simple sobre el capital original: total = capital × tasa × meses
   const r = periodRateMonthly(ratePctMonthly, frequency);
   const n = termLength;
   if (n <= 0) return 0;
-  return capital / n + capital * r;
+  const raw = capital / n + capital * r;
+  return roundUpPayment(raw);
 }
 
 export function generateSchedule(loan: Loan): AmortizationRow[] {
@@ -50,12 +59,26 @@ export function generateSchedule(loan: Loan): AmortizationRow[] {
     let balance = capital;
     const interest = capital * r;
     for (let i = 1; i <= total; i++) {
-      const cap = Math.min(periodPayment - interest, balance);
+      const isLast = i === total;
+      if (balance <= 0) {
+        rows.push({
+          month: i,
+          date: addPeriodsISO(startDate, i, loan.frequency),
+          payment: 0,
+          interest: 0,
+          capital: 0,
+          balance: 0,
+        });
+        continue;
+      }
+      // La última cuota absorbe el resto para que el total siga exacto.
+      const cap = isLast ? balance : Math.min(periodPayment - interest, balance);
       balance = Math.max(0, balance - cap);
+      const payment = isLast ? cap + interest : periodPayment;
       rows.push({
         month: i,
         date: addPeriodsISO(startDate, i, loan.frequency),
-        payment: periodPayment,
+        payment,
         interest,
         capital: cap,
         balance,
@@ -187,15 +210,17 @@ export function recalculateSchedule(loan: Loan, payments: Payment[], extraPaymen
     });
   }
   const interest = remainingCapital * r;
-  const periodPayment = remainingCapital / remainingPeriods + interest;
+  const periodPayment = fixedPeriodPayment(remainingCapital, loan.interestRate, remainingPeriods, loan.frequency);
   let balance = remainingCapital;
   return Array.from({ length: remainingPeriods }, (_, i) => {
-    const cap = Math.min(periodPayment - interest, balance);
+    const isLast = i === remainingPeriods - 1;
+    const cap = isLast ? balance : Math.min(periodPayment - interest, balance);
     balance = Math.max(0, balance - cap);
+    const payment = isLast ? cap + interest : periodPayment;
     return {
       month: i + 1,
       date: addPeriodsISO(startDate, i, loan.frequency),
-      payment: periodPayment,
+      payment,
       interest,
       capital: cap,
       balance,
