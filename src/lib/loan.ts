@@ -334,3 +334,10 @@ export function withRunningBalances(loan: Loan, loanPayments: Payment[]): Paymen
       return { ...p, remainingCapital: cap };
     });
 }
+
+/** Fecha sugerida para el pago número n (posterior al último pago si lo hay). */
+export function addNextPaymentDate(startDate: string, n: number, frequency: PaymentFrequency, lastDate?: string): string {
+  const d = addPeriodsISO(startDate, n, frequency);
+  if (lastDate && d <= lastDate) return addPeriodsISO(lastDate, 1, frequency);
+  return d;
+}
