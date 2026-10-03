@@ -4,7 +4,7 @@ import { Card, Badge, Button, ProgressBar, EmptyState } from './ui';
 import { formatCurrency, formatDate, todayISO } from '@/lib/format';
 import { computeSummary, nextInstallment, generateSchedule, freqBadgeText, periodLabel, periodsLabel, effectiveMonths } from '@/lib/loan';
 import type { Loan, Payment, Client } from '@/types';
-import { ArrowLeft, Phone, Plus, Wallet, Receipt, Trash2, FileText, Calendar, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Phone, Plus, Wallet, Receipt, Trash2, FileText, Pencil, Calendar, TrendingUp } from 'lucide-react';
 
 interface Props {
   store: Store;
@@ -13,9 +13,10 @@ interface Props {
   onNewLoan: (client: Client) => void;
   onRegisterPayment: (loan: Loan) => void;
   onViewReceipt: (payment: Payment) => void;
+  onEditLoan: (loan: Loan) => void;
 }
 
-export function ClientDetail({ store, client, onBack, onNewLoan, onRegisterPayment, onViewReceipt }: Props) {
+export function ClientDetail({ store, client, onBack, onNewLoan, onRegisterPayment, onViewReceipt, onEditLoan }: Props) {
   const [expandedLoan, setExpandedLoan] = useState<string | null>(null);
   const [showSchedule, setShowSchedule] = useState<string | null>(null);
 
@@ -108,11 +109,16 @@ export function ClientDetail({ store, client, onBack, onNewLoan, onRegisterPayme
                       </p>
                       {loan.note && <p className="mt-1 text-xs text-slate-400">{loan.note}</p>}
                     </div>
-                    {!summary.isSettled && (
-                      <Button size="sm" onClick={() => onRegisterPayment(loan)}>
-                        <Receipt size={16} /> Registrar Pago
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => onEditLoan(loan)}>
+                        <Pencil size={16} /> Editar
                       </Button>
-                    )}
+                      {!summary.isSettled && (
+                        <Button size="sm" onClick={() => onRegisterPayment(loan)}>
+                          <Receipt size={16} /> Registrar Pago
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Progress */}
