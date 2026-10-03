@@ -2,7 +2,7 @@ import type { Loan, Payment, AmortizationRow, LoanSummary, PaymentFrequency } fr
 import { addPeriodsISO } from './format';
 
 const DAYS_PER_MONTH = 30;
-const WEEKS_PER_MONTH = 4.33;
+const WEEKS_PER_MONTH = 4;
 
 export function periodsPerMonth(frequency: PaymentFrequency): number {
   if (frequency === 'diario') return DAYS_PER_MONTH;
@@ -32,10 +32,11 @@ export function effectiveMonths(loan: Loan): number {
 }
 
 export function fixedPeriodPayment(capital: number, ratePctMonthly: number, termLength: number, frequency: PaymentFrequency): number {
+  // Interés simple sobre el capital original: total = capital × tasa × meses
   const r = periodRateMonthly(ratePctMonthly, frequency);
   const n = termLength;
-  if (r === 0) return capital / n;
-  return (capital * r) / (1 - Math.pow(1 + r, -n));
+  if (n <= 0) return 0;
+  return capital / n + capital * r;
 }
 
 export function generateSchedule(loan: Loan): AmortizationRow[] {
@@ -47,8 +48,8 @@ export function generateSchedule(loan: Loan): AmortizationRow[] {
   if (modality === 'cuota_fija') {
     const periodPayment = fixedPeriodPayment(capital, loan.interestRate, termLength, loan.frequency);
     let balance = capital;
+    const interest = capital * r;
     for (let i = 1; i <= total; i++) {
-      const interest = balance * r;
       const cap = Math.min(periodPayment - interest, balance);
       balance = Math.max(0, balance - cap);
       rows.push({
@@ -185,10 +186,10 @@ export function recalculateSchedule(loan: Loan, payments: Payment[], extraPaymen
       };
     });
   }
-  const periodPayment = (remainingCapital * r) / (1 - Math.pow(1 + r, -remainingPeriods));
+  const interest = remainingCapital * r;
+  const periodPayment = remainingCapital / remainingPeriods + interest;
   let balance = remainingCapital;
   return Array.from({ length: remainingPeriods }, (_, i) => {
-    const interest = balance * r;
     const cap = Math.min(periodPayment - interest, balance);
     balance = Math.max(0, balance - cap);
     return {
