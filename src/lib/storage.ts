@@ -4,6 +4,9 @@ import { uid, todayISO, addMonthsISO, addWeeksISO, addDaysISO } from './format';
 const STORAGE_KEY = 'prestamos_app_v3';
 
 export function loadState(): AppState {
+  if (typeof window === 'undefined') {
+    return { clients: [], loans: [], payments: [], receiptCounter: 0 };
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -30,6 +33,7 @@ export function loadState(): AppState {
 }
 
 export function saveState(state: AppState): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
