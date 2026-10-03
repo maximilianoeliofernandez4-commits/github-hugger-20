@@ -81,6 +81,8 @@ function App({ userId }: { userId: string }) {
     setLastPayment(payment);
   };
 
+  if (!store.ready) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">Cargando tus datos…</div>;
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -106,6 +108,9 @@ function App({ userId }: { userId: string }) {
               </Button>
               <Button size="sm" onClick={() => { setLoanClient(null); setShowNewLoan(true); }}>
                 <Plus size={16} /> <span className="hidden sm:inline">Préstamo</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { localStorage.removeItem('prestamos_app_v3'); void supabase.auth.signOut(); }} title="Salir">
+                <LogOut size={16} />
               </Button>
             </div>
           </div>
