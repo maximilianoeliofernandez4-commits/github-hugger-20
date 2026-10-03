@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Input, Select, Textarea, Button } from './ui';
 import type { Store } from '@/hooks/useStore';
 import type { Client, Loan, LoanModality, PaymentMethod, PaymentFrequency } from '@/types';
@@ -32,6 +32,9 @@ function roundToFive(value: number): number {
 
 export function NewLoanModal({ open, onClose, store, client, fixedClient }: Props) {
   const [clientId, setClientId] = useState(client?.id ?? '');
+  useEffect(() => {
+    if (open) setClientId(client?.id ?? '');
+  }, [open, client?.id]);
   const [capital, setCapital] = useState('');
   const [startDate, setStartDate] = useState(todayISO());
   const [interestRate, setInterestRate] = useState('');
