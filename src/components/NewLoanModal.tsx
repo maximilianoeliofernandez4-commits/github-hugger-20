@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Input, Select, Textarea, Button } from './ui';
 import type { Store } from '@/hooks/useStore';
 import type { Client, Loan, LoanModality, PaymentMethod, PaymentFrequency } from '@/types';
