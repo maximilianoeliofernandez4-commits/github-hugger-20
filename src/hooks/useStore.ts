@@ -71,13 +71,13 @@ export function useStore() {
   }, []);
 
   /** Reemplaza todos los pagos de un préstamo (para editar el historial). */
-  const replaceLoanPayments = useCallback((loanId: string, list: Omit<Payment, 'id' | 'receiptNo'>[] & Partial<Payment>[]) => {
+  const replaceLoanPayments = useCallback((loanId: string, list: Payment[]) => {
     setState((s) => {
       let counter = s.receiptCounter;
       const next: Payment[] = list.map((p) => {
-        if (p.id && p.receiptNo) return p as Payment;
+        if (p.id && p.receiptNo) return p;
         counter++;
-        return { ...(p as Payment), id: p.id || uid(), receiptNo: `R-${String(counter).padStart(5, '0')}` };
+        return { ...p, id: p.id || uid(), receiptNo: `R-${String(counter).padStart(5, '0')}` };
       });
       return { ...s, payments: [...s.payments.filter((x) => x.loanId !== loanId), ...next], receiptCounter: counter };
     });
