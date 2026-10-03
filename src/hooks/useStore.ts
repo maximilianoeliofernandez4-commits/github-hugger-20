@@ -1,14 +1,39 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AppState, Client, Loan, Payment } from '@/types';
 import { loadState, saveState } from '@/lib/storage';
 import { uid } from '@/lib/format';
+import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
-export function useStore() {
+export function useStore(userId: string) {
   const [state, setState] = useState<AppState>(() => loadState());
+  const [ready, setReady] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cargar desde la nube; si no hay nada, subir lo que hay en este dispositivo.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('app_state').select('data').eq('user_id', userId).maybeSingle();
+      if (cancelled) return;
+      if (data?.data) {
+        setState(data.data as unknown as AppState);
+      } else {
+        await supabase.from('app_state').upsert({ user_id: userId, data: loadState() as unknown as Json });
+      }
+      setReady(true);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
 
   useEffect(() => {
     saveState(state);
-  }, [state]);
+    if (!ready) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void supabase.from('app_state').upsert({ user_id: userId, data: state as unknown as Json, updated_at: new Date().toISOString() });
+    }, 600);
+  }, [state, ready, userId]);
 
   const addClient = useCallback((data: Omit<Client, 'id' | 'createdAt'>) => {
     const client: Client = { ...data, id: uid(), createdAt: new Date().toISOString().slice(0, 10) };
@@ -17,10 +42,7 @@ export function useStore() {
   }, []);
 
   const updateClient = useCallback((id: string, data: Partial<Client>) => {
-    setState((s) => ({
-      ...s,
-      clients: s.clients.map((c) => (c.id === id ? { ...c, ...data } : c)),
-    }));
+    setState((s) => ({ ...s, clients: s.clients.map((c) => (c.id === id ? { ...c, ...data } : c)) }));
   }, []);
 
   const deleteClient = useCallback((id: string) => {
@@ -42,10 +64,7 @@ export function useStore() {
   }, []);
 
   const updateLoan = useCallback((id: string, data: Partial<Loan>) => {
-    setState((s) => ({
-      ...s,
-      loans: s.loans.map((l) => (l.id === id ? { ...l, ...data } : l)),
-    }));
+    setState((s) => ({ ...s, loans: s.loans.map((l) => (l.id === id ? { ...l, ...data } : l)) }));
   }, []);
 
   const deleteLoan = useCallback((id: string) => {
@@ -61,11 +80,7 @@ export function useStore() {
     setState((s) => {
       const receiptNo = `R-${String(s.receiptCounter + 1).padStart(5, '0')}`;
       newPayment = { ...data, id: uid(), receiptNo };
-      return {
-        ...s,
-        payments: [...s.payments, newPayment],
-        receiptCounter: s.receiptCounter + 1,
-      };
+      return { ...s, payments: [...s.payments, newPayment], receiptCounter: s.receiptCounter + 1 };
     });
     return newPayment;
   }, []);
@@ -84,10 +99,7 @@ export function useStore() {
   }, []);
 
   const deletePayment = useCallback((id: string) => {
-    setState((s) => ({
-      ...s,
-      payments: s.payments.filter((p) => p.id !== id),
-    }));
+    setState((s) => ({ ...s, payments: s.payments.filter((p) => p.id !== id) }));
   }, []);
 
   const getLastPayment = useCallback(
@@ -102,6 +114,7 @@ export function useStore() {
 
   return {
     state,
+    ready,
     addClient,
     updateClient,
     deleteClient,

@@ -17,12 +17,23 @@ export const Route = createFileRoute('/')({
 
 function HomePage() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data.session?.user.id ?? null);
+      setMounted(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setUserId(session?.user.id ?? null));
+    return () => sub.subscription.unsubscribe();
+  }, []);
   if (!mounted) return <div className="min-h-screen bg-slate-50" />;
-  return <App />;
+  if (!userId) return <AuthScreen />;
+  return <App key={userId} userId={userId} />;
 }
 
 import { useStore } from '@/hooks/useStore';
+import { supabase } from '@/integrations/supabase/client';
+import { AuthScreen } from '@/components/AuthScreen';
 import { Dashboard } from '@/components/Dashboard';
 import { ClientDetail } from '@/components/ClientDetail';
 import { NewClientModal } from '@/components/NewClientModal';
@@ -33,10 +44,10 @@ import { Reports } from '@/components/Reports';
 import { EditLoanModal } from '@/components/EditLoanModal';
 import { Button } from '@/components/ui';
 import type { Client, Loan, Payment } from '@/types';
-import { Wallet, Search, Plus, BarChart3 } from 'lucide-react';
+import { Wallet, Search, Plus, BarChart3, LogOut } from 'lucide-react';
 
-function App() {
-  const store = useStore();
+function App({ userId }: { userId: string }) {
+  const store = useStore(userId);
   const [view, setView] = useState<'dashboard' | 'client' | 'reports'>('dashboard');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -70,6 +81,8 @@ function App() {
     setLastPayment(payment);
   };
 
+  if (!store.ready) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">Cargando tus datos…</div>;
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -95,6 +108,9 @@ function App() {
               </Button>
               <Button size="sm" onClick={() => { setLoanClient(null); setShowNewLoan(true); }}>
                 <Plus size={16} /> <span className="hidden sm:inline">Préstamo</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { localStorage.removeItem('prestamos_app_v3'); void supabase.auth.signOut(); }} title="Salir">
+                <LogOut size={16} />
               </Button>
             </div>
           </div>
