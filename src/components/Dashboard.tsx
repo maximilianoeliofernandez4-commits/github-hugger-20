@@ -3,7 +3,7 @@ import type { Store } from '@/hooks/useStore';
 import { Card, Badge, ProgressBar, Button, EmptyState } from './ui';
 import { formatCurrency, formatDate, monthKey, todayISO } from '@/lib/format';
 import { computeSummary } from '@/lib/loan';
-import { Users, Wallet, TrendingUp, AlertCircle, ArrowRight, Search } from 'lucide-react';
+import { Users, Wallet, TrendingUp, AlertCircle, ArrowRight, Search, Landmark } from 'lucide-react';
 
 interface Props {
   store: Store;
@@ -44,7 +44,30 @@ export function Dashboard({ store, search, onClientClick, onNewClient, onNewLoan
       else clientsPending++;
     }
 
-    return { totalCapital, monthInterest, totalInterestCollected, clientsUpToDate, clientsPending, activeLoans: activeLoans.length };
+    // Capital propio vs ganancia: se calcula sobre TODOS los préstamos
+    // (activos y terminados) para saber en todo momento qué plata es capital
+    // y qué plata es ganancia.
+    let capitalOutstanding = 0;
+    let capitalRecovered = 0;
+    let profitCollected = 0;
+    for (const loan of store.state.loans) {
+      const summary = computeSummary(loan, store.state.payments);
+      capitalOutstanding += summary.remainingCapital;
+      capitalRecovered += summary.paidCapital;
+      profitCollected += summary.paidInterest;
+    }
+
+    return {
+      totalCapital,
+      monthInterest,
+      totalInterestCollected,
+      clientsUpToDate,
+      clientsPending,
+      activeLoans: activeLoans.length,
+      capitalOutstanding,
+      capitalRecovered,
+      profitCollected,
+    };
   }, [store.state]);
 
   const filteredClients = useMemo(() => {
@@ -120,6 +143,51 @@ export function Dashboard({ store, search, onClientClick, onNewClient, onNewLoan
             </div>
           </div>
         </Card>
+      </div>
+
+      {/* Capital vs Ganancia */}
+      <div>
+        <h2 className="mb-3 text-lg font-bold text-slate-900">Mi Capital</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Card className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Capital en la Calle</p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">{formatCurrency(stats.capitalOutstanding)}</p>
+                <p className="mt-0.5 text-xs text-slate-400">Prestado, pendiente de cobro</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                <Wallet size={22} />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Capital Recuperado</p>
+                <p className="mt-1 text-2xl font-bold text-teal-600">{formatCurrency(stats.capitalRecovered)}</p>
+                <p className="mt-0.5 text-xs text-slate-400">Disponible para nuevos préstamos</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+                <Landmark size={22} />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Ganancia Cobrada</p>
+                <p className="mt-1 text-2xl font-bold text-emerald-600">{formatCurrency(stats.profitCollected)}</p>
+                <p className="mt-0.5 text-xs text-slate-400">Intereses ya cobrados</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <TrendingUp size={22} />
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
