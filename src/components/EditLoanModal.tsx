@@ -35,7 +35,7 @@ export function EditLoanModal({ open, onClose, store, loan }: Props) {
 
   useEffect(() => {
     if (!open || !loan) return;
-    setCapital(String(loan.capital));
+    setCapital(String(Math.round(loan.capital)));
     setRate(String(loan.interestRate));
     setStartDate(loan.startDate);
     setModality(loan.modality);

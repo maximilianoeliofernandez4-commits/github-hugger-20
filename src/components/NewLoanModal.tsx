@@ -3,7 +3,9 @@ import { Modal, Input, MoneyInput, Select, Textarea, Button } from './ui';
 import type { Store } from '@/hooks/useStore';
 import type { Client, Loan, LoanModality, PaymentMethod, PaymentFrequency } from '@/types';
 import { todayISO, formatCurrency } from '@/lib/format';
-import { effectiveMonths, fixedPeriodPayment, periodsPerMonth, periodRateMonthly } from '@/lib/loan';
+import { effectiveMonths, fixedPeriodPayment, periodsPerMonth, periodRateMonthly, imputePayment, withRunningBalances } from '@/lib/loan';
+import { addPeriodsISO, uid } from '@/lib/format';
+import type { Payment } from '@/types';
 
 interface Props {
   open: boolean;
@@ -43,6 +45,8 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
   const [termLength, setTermLength] = useState('6');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo');
   const [note, setNote] = useState('');
+  const [isPast, setIsPast] = useState(false);
+  const [paidCount, setPaidCount] = useState('0');
 
   const cap = parseFloat(capital) || 0;
   const rate = parseFloat(interestRate) || 0;
@@ -83,7 +87,7 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientId || cap <= 0 || rate <= 0 || term <= 0) return;
-    store.addLoan({
+    const loan = store.addLoan({
       clientId,
       capital: cap,
       startDate,
@@ -94,6 +98,38 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
       paymentMethod,
       note: note.trim(),
     });
+    const n = isPast ? Math.max(0, parseInt(paidCount) || 0) : 0;
+    if (n > 0) {
+      const list: Payment[] = [];
+      for (let i = 0; i < n; i++) {
+        if (!openEnded && i >= term) break;
+        const imp = imputePayment(loan, list, 0, 'auto');
+        // Monto esperado de esa cuota (solo interés: solo el interés del período)
+        const remainingCap = loan.capital - list.reduce((s, p) => s + p.toCapital, 0);
+        const r = periodRateMonthly(loan.interestRate, loan.frequency);
+        let toInterest: number;
+        let toCapital: number;
+        if (openEnded) {
+          toInterest = remainingCap * r;
+          toCapital = 0;
+        } else {
+          const full = imputePayment(loan, list, 1e15, 'auto');
+          toInterest = full.toInterest;
+          toCapital = full.toCapital;
+        }
+        void imp;
+        list.push({
+          id: uid(), receiptNo: '', loanId: loan.id,
+          date: addPeriodsISO(startDate, i + 1, frequency),
+          amount: toInterest + toCapital, method: paymentMethod,
+          concept: toCapital > 0 ? 'cuota' : 'interes', imputation: 'auto',
+          toInterest, toCapital, note: 'Pago anterior cargado', remainingCapital: 0, remainingInterest: 0,
+        });
+      }
+      store.replaceLoanPayments(loan.id, withRunningBalances(loan, list));
+    }
+    setIsPast(false);
+    setPaidCount('0');
     setCapital('');
     setInterestRate('');
     setNote('');
@@ -143,6 +179,19 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
               <option key={k} value={k}>{v}</option>
             ))}
           </Select>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 p-3 space-y-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input type="checkbox" checked={isPast} onChange={(e) => setIsPast(e.target.checked)} className="h-4 w-4 accent-teal-600" />
+            Es un préstamo que ya venía de antes (no lo tenía anotado)
+          </label>
+          {isPast && (
+            <>
+              <Input label={`¿Cuántos pagos ya te hizo hasta hoy?`} type="number" min="0" value={paidCount} onChange={(e) => setPaidCount(e.target.value)} hint={openEnded ? `Se cargan como pagos de solo interés, uno por ${periodWord}, desde la fecha de inicio.` : `Se cargan como cuotas completas, una por ${periodWord}, desde la fecha de inicio.`} />
+              <p className="text-xs text-slate-500">Poné la fecha real en que le prestaste. Después podés corregir cada pago desde "Editar" en el préstamo.</p>
+            </>
+          )}
         </div>
 
         <Select label="Método de pago preferido" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}>
