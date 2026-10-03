@@ -119,6 +119,7 @@ export function nextInstallment(loan: Loan, payments: Payment[]): { month: numbe
   const nextIdx = loanPayments.length;
   if (nextIdx >= schedule.length) return null;
   const row = schedule[nextIdx];
+  if (!row) return null;
   return { month: row.month, amount: row.payment, interest: row.interest, capital: row.capital, date: row.date };
 }
 

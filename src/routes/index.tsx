@@ -22,7 +22,6 @@ function HomePage() {
   return <App />;
 }
 
-import { useState, useEffect } from 'react';
 import { useStore } from '@/hooks/useStore';
 import { Dashboard } from '@/components/Dashboard';
 import { ClientDetail } from '@/components/ClientDetail';
