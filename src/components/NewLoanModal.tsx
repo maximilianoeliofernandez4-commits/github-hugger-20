@@ -3,7 +3,7 @@ import { Modal, Input, Select, Textarea, Button } from './ui';
 import type { Store } from '@/hooks/useStore';
 import type { Client, Loan, LoanModality, PaymentMethod, PaymentFrequency } from '@/types';
 import { todayISO, formatCurrency } from '@/lib/format';
-import { effectiveMonths, fixedPeriodPayment } from '@/lib/loan';
+import { effectiveMonths, fixedPeriodPayment, periodsPerMonth, periodRateMonthly } from '@/lib/loan';
 
 interface Props {
   open: boolean;
