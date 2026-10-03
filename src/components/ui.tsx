@@ -59,7 +59,7 @@ export function Badge({ children, variant = 'neutral', className }: BadgeProps) 
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
-  hint?: string;
+  hint?: string | undefined;
 }
 
 export function Input({ label, hint, className, ...props }: InputProps) {
@@ -99,7 +99,7 @@ export function Textarea({ label, className, ...props }: TextareaProps) {
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
-  hint?: string;
+  hint?: string | undefined;
 }
 
 export function Select({ label, hint, className, children, ...props }: SelectProps) {

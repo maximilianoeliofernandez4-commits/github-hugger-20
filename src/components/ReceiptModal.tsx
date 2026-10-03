@@ -20,6 +20,7 @@ export function ReceiptModal({ open, onClose, payment, client, loan }: Props) {
       const timer = setTimeout(() => handlePrint(), 300);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [open, payment]);
 
   const handlePrint = () => {
