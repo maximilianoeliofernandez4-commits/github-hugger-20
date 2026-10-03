@@ -104,7 +104,7 @@ export function ClientDetail({ store, client, onBack, onNewLoan, onRegisterPayme
                         {summary.isSettled && <Badge variant="success">Liquidada</Badge>}
                       </div>
                       <p className="mt-1 text-sm text-slate-500">
-                        {loan.interestRate}% mensual · {loan.termLength} {periodsLabel(loan)} ({effectiveMonths(loan).toFixed(1)} meses) · Inicio {formatDate(loan.startDate)}
+                        {loan.interestRate}% mensual · {loan.modality === 'solo_interes' ? 'Sin plazo fijo' : `${loan.termLength} ${periodsLabel(loan)} (${effectiveMonths(loan).toFixed(1)} meses)`} · Inicio {formatDate(loan.startDate)}
                       </p>
                       {loan.note && <p className="mt-1 text-xs text-slate-400">{loan.note}</p>}
                     </div>
@@ -231,7 +231,7 @@ export function ClientDetail({ store, client, onBack, onNewLoan, onRegisterPayme
 }
 
 function ScheduleTable({ loan, payments }: { loan: Loan; payments: Payment[] }) {
-  const schedule = generateSchedule(loan);
+  const schedule = generateSchedule(loan, payments);
   const paidCount = payments.filter((p) => p.loanId === loan.id).length;
   const periodWord = loan.frequency === 'diario' ? 'Día' : loan.frequency === 'semanal' ? 'Sem.' : 'Mes';
 

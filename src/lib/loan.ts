@@ -48,7 +48,26 @@ export function fixedPeriodPayment(capital: number, ratePctMonthly: number, term
   return roundUpPayment(raw);
 }
 
-export function generateSchedule(loan: Loan): AmortizationRow[] {
+function openEndedSchedule(loan: Loan, payments: Payment[]): AmortizationRow[] {
+  // Solo interés sin plazo: cada período se cobra el interés sobre el capital
+  // pendiente, hasta que el cliente paga el capital cuando pueda.
+  const r = periodRateMonthly(loan.interestRate, loan.frequency);
+  const lp = payments.filter((p) => p.loanId === loan.id).sort((a, b) => a.date.localeCompare(b.date));
+  const rows: AmortizationRow[] = [];
+  let balance = loan.capital;
+  lp.forEach((p, i) => {
+    balance = Math.max(0, balance - p.toCapital);
+    rows.push({ month: i + 1, date: addPeriodsISO(loan.startDate, i + 1, loan.frequency), payment: p.amount, interest: p.toInterest, capital: p.toCapital, balance });
+  });
+  if (balance >= 1) {
+    const interest = balance * r;
+    rows.push({ month: lp.length + 1, date: addPeriodsISO(loan.startDate, lp.length + 1, loan.frequency), payment: interest, interest, capital: 0, balance });
+  }
+  return rows;
+}
+
+export function generateSchedule(loan: Loan, payments: Payment[] = []): AmortizationRow[] {
+  if (loan.modality === 'solo_interes') return openEndedSchedule(loan, payments);
   const rows: AmortizationRow[] = [];
   const { capital, modality, startDate, termLength } = loan;
   const r = periodRateMonthly(loan.interestRate, loan.frequency);
@@ -103,7 +122,7 @@ export function generateSchedule(loan: Loan): AmortizationRow[] {
 }
 
 export function computeSummary(loan: Loan, payments: Payment[]): LoanSummary {
-  const schedule = generateSchedule(loan);
+  const schedule = generateSchedule(loan, payments);
   const loanPayments = payments
     .filter((p) => p.loanId === loan.id)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -117,11 +136,14 @@ export function computeSummary(loan: Loan, payments: Payment[]): LoanSummary {
   }
 
   const remainingCapital = Math.max(0, loan.capital - paidCapital);
-  const totalInterestExpected = schedule.reduce((s, r) => s + r.interest, 0);
+  const openEnded = loan.modality === 'solo_interes';
+  const totalInterestExpected = openEnded
+    ? paidInterest + (remainingCapital >= 1 ? remainingCapital * periodRateMonthly(loan.interestRate, loan.frequency) : 0)
+    : schedule.reduce((s, r) => s + r.interest, 0);
   const totalExpected = loan.capital + totalInterestExpected;
   const totalPaid = loanPayments.reduce((s, p) => s + p.amount, 0);
   const outstandingInterest = Math.max(0, totalInterestExpected - paidInterest);
-  const isSettled = remainingCapital < 1 && outstandingInterest < 1;
+  const isSettled = openEnded ? remainingCapital < 1 : remainingCapital < 1 && outstandingInterest < 1;
 
   return {
     schedule,
@@ -138,6 +160,13 @@ export function computeSummary(loan: Loan, payments: Payment[]): LoanSummary {
 }
 
 export function nextInstallment(loan: Loan, payments: Payment[]): { month: number; amount: number; interest: number; capital: number; date: string } | null {
+  if (loan.modality === 'solo_interes') {
+    const s = computeSummary(loan, payments);
+    if (s.isSettled) return null;
+    const n = s.paymentCount + 1;
+    const interest = s.remainingCapital * periodRateMonthly(loan.interestRate, loan.frequency);
+    return { month: n, amount: interest + s.remainingCapital, interest, capital: s.remainingCapital, date: addPeriodsISO(loan.startDate, n, loan.frequency) };
+  }
   const schedule = generateSchedule(loan);
   const loanPayments = payments.filter((p) => p.loanId === loan.id);
   const nextIdx = loanPayments.length;
@@ -195,7 +224,8 @@ export function recalculateSchedule(loan: Loan, payments: Payment[], extraPaymen
   const r = periodRateMonthly(loan.interestRate, loan.frequency);
   const startDate = addPeriodsISO(loan.startDate, summary.paymentCount + 1, loan.frequency);
 
-  if (loan.modality === 'solo_interes' || loan.modality === 'personalizado') {
+  if (loan.modality === 'solo_interes') return [];
+  if (loan.modality === 'personalizado') {
     const interest = remainingCapital * r;
     return Array.from({ length: remainingPeriods }, (_, i) => {
       const isLast = i === remainingPeriods - 1;

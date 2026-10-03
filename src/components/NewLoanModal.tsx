@@ -3,7 +3,7 @@ import { Modal, Input, Select, Textarea, Button } from './ui';
 import type { Store } from '@/hooks/useStore';
 import type { Client, Loan, LoanModality, PaymentMethod, PaymentFrequency } from '@/types';
 import { todayISO, formatCurrency } from '@/lib/format';
-import { effectiveMonths, fixedPeriodPayment } from '@/lib/loan';
+import { effectiveMonths, fixedPeriodPayment, periodsPerMonth, periodRateMonthly } from '@/lib/loan';
 
 interface Props {
   open: boolean;
@@ -43,7 +43,8 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
 
   const cap = parseFloat(capital) || 0;
   const rate = parseFloat(interestRate) || 0;
-  const term = parseInt(termLength) || 0;
+  const openEnded = modality === 'solo_interes';
+  const term = openEnded ? periodsPerMonth(frequency) : parseInt(termLength) || 0;
 
   const periodWord = FREQ_PERIOD_WORD[frequency];
   const periodsWord = FREQ_PERIODS_WORD[frequency];
@@ -54,14 +55,16 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
     ? effectiveMonths({ interestRate: rate, frequency, termLength: term } as Loan)
     : 0;
 
-  const shouldRound = modality === 'solo_interes' || modality === 'personalizado';
+  const shouldRound = modality === 'personalizado';
   const rawTotalPct = effMonths > 0 ? rate * effMonths : 0;
   const roundedTotalPct = roundToFive(rawTotalPct);
   const isRounded = Math.abs(roundedTotalPct - rawTotalPct) > 0.01;
   const adjustedRate = effMonths > 0 && shouldRound ? roundedTotalPct / effMonths : rate;
 
   const perPeriodCharge = showPreview
-    ? shouldRound
+    ? openEnded
+      ? cap * periodRateMonthly(rate, frequency)
+      : shouldRound
       ? (cap * roundedTotalPct / 100) / term
       : fixedPeriodPayment(cap, rate, term, frequency)
     : 0;
@@ -121,7 +124,9 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
 
         <div className="grid grid-cols-2 gap-4">
           <Input label="Fecha de inicio *" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          <Input label={`Plazo (${periodsWord}) *`} type="number" value={termLength} onChange={(e) => setTermLength(e.target.value)} placeholder="6" hint={effMonths > 0 ? `Equivale a ${effMonths.toFixed(1)} meses` : undefined} />
+          {openEnded ? (
+            <div className="text-xs text-slate-500 self-end pb-2">Sin plazo: cobra interés cada {periodWord} hasta que devuelva el capital.</div>
+          ) : <Input label={`Plazo (${periodsWord}) *`} type="number" value={termLength} onChange={(e) => setTermLength(e.target.value)} placeholder="6" hint={effMonths > 0 ? `Equivale a ${effMonths.toFixed(1)} meses` : undefined} />}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -144,7 +149,14 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
 
         <Textarea label="Notas del préstamo" value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Condiciones especiales, acuerdos, etc." />
 
-        {showPreview && (
+        {showPreview && openEnded && (
+          <div className="rounded-xl bg-teal-50 border border-teal-100 p-4">
+            <p className="text-xs text-teal-600 font-semibold uppercase tracking-wide">Interés {periodWord}</p>
+            <p className="text-2xl font-bold text-teal-900">{formatCurrency(perPeriodCharge)}</p>
+            <p className="mt-2 text-xs text-teal-600">Cobra {formatCurrency(perPeriodCharge)} de interés cada {periodWord}, las veces que haga falta. Cuando devuelva el capital ({formatCurrency(cap)}) el préstamo queda liquidado.</p>
+          </div>
+        )}
+        {showPreview && !openEnded && (
           <div className="rounded-xl bg-teal-50 border border-teal-100 p-4 space-y-3">
             <div className="flex items-baseline justify-between">
               <div>
@@ -182,11 +194,6 @@ export function NewLoanModal({ open, onClose, store, client, fixedClient }: Prop
               </div>
             </div>
 
-            {modality === 'solo_interes' && (
-              <p className="text-xs text-teal-600 border-t border-teal-100 pt-2">
-                {formatCurrency(perPeriodCharge)} de interés cada {periodWord} + {formatCurrency(cap)} de capital al final
-              </p>
-            )}
             {modality === 'personalizado' && (
               <p className="text-xs text-teal-600 border-t border-teal-100 pt-2">
                 Plan flexible: ~{formatCurrency(perPeriodCharge)} de interés cada {periodWord}, capital cuando se acuerde
