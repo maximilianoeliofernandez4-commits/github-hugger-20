@@ -58,7 +58,7 @@ export function Badge({ children, variant = 'neutral', className }: BadgeProps) 
 }
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+  label?: string | undefined;
   hint?: string | undefined;
 }
 
