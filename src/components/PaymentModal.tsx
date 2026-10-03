@@ -97,7 +97,7 @@ export function PaymentModal({ open, onClose, store, loan, client, onPaymentRegi
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Monto del pago (COP) *" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" autoFocus />
+        <Input label="Monto del pago (ARS) *" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" autoFocus />
 
         {next && (
           <div className="flex flex-wrap gap-2">

@@ -16,7 +16,7 @@ export function loadState(): AppState {
         if (!l.frequency) l.frequency = 'mensual';
         if (l.termLength === undefined) {
           if (l.frequency === 'semanal') {
-            l.termLength = Math.round((l as unknown as { termMonths: number }).termMonths * 4.33);
+            l.termLength = Math.round((l as unknown as { termMonths: number }).termMonths * 4);
           } else {
             l.termLength = (l as unknown as { termMonths: number }).termMonths;
           }
